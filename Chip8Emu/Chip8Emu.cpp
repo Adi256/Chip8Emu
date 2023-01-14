@@ -1,10 +1,8 @@
-// Chip8Emu.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
+#include "Chip8.h"
 
-int main()
+int main(int argc, char** argv)
 {
-    std::cout << "Hello World!\n";
-    std::cout << "Test Change" << std::endl;
+    Chip8 chip8;
+    
 }

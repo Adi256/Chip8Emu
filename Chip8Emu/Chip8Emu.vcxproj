@@ -127,7 +127,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Chip8.cpp" />
     <ClCompile Include="Chip8Emu.cpp" />
+    <ClCompile Include="Graphics.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Chip8.h" />
+    <ClInclude Include="Graphics.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
