@@ -4,6 +4,7 @@
 
 #include"Graphics.h"
 #include"Sound.h"
+#include"MathExtended.h"
 
 #define MEMORY_SIZE 4096
 //Chip has 15 8-bit general purpose registers, plus one extra for carry flag
@@ -84,6 +85,7 @@ class Chip8
 	}
 
 	void execute0x8Opcodes();
+	void execute0xEOpcodes();
 	void executeOpcode();
 
 	void updateTimers()

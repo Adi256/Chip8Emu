@@ -130,6 +130,29 @@ void Chip8::execute0x8Opcodes()
 	}
 }
 
+void Chip8::execute0xEOpcodes()
+{
+	switch (opcode & 0x000F)
+	{
+	//Skip the next instruction if the key key[VX] is pressed
+	case 0x000E:
+		if (key[opcode & 0x0F00])
+			pc += 4;
+		else
+			pc += 2;
+		break;
+
+	//Skip the next instruction if the key key[VX] is not pressed
+	case 0x0001:
+		if (key[opcode & 0x0F00])
+			pc += 2;
+		else
+			pc += 4;
+		break;
+
+	}
+}
+
 void Chip8::executeOpcode()
 {
 	switch (opcode & 0xF000)
@@ -150,11 +173,6 @@ void Chip8::executeOpcode()
 			std::cout << "Unknown opcode: " << opcode << std::endl;
 		}
 
-	case 0xA000:
-		I = opcode & 0x0FFF;
-		pc += 2;
-		break;
-
 	//Subroutine call
 	case 0x2000:
 		stack[sp++] = pc;
@@ -164,6 +182,32 @@ void Chip8::executeOpcode()
 	//Adds the value of VY to VX
 	case 0x8000:
 		execute0x8Opcodes();
+		break;
+
+	//Skip the next instruction if VX != VY
+	case 0x9000:
+		if (V[opcode & 0x0F00] == V[opcode & 0x00F0])
+			pc += 2;
+		else
+			pc += 4;
+		break;
+
+	case 0xA000:
+		I = opcode & 0x0FFF;
+		pc += 2;
+		break;
+
+	case 0xB000:
+		pc = V[0] + opcode & 0x0FFF;
+		break;
+
+	case 0xC000:
+		V[opcode & 0x0F00] = MathExtended::randomNumber(0, 256) & (opcode & 0x00FF);
+		pc += 2;
+		break;
+
+	case 0xE000:
+		execute0xEOpcodes();
 		break;
 
 	default:
