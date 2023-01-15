@@ -48,7 +48,7 @@ class Chip8
 	unsigned short sp;
 
 	//Stores a current state of a key
-	bool key[PHYSICAL_KEY_AMOUNT];
+	unsigned char key[PHYSICAL_KEY_AMOUNT];
 	void clearKeysState();
 
 	void resetChip()
