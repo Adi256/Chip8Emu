@@ -69,11 +69,16 @@ class Chip8
 		clearStack();
 		sp = 0; //Reseting the stack pointer.
 	}
+	
+	//Loads a font set into a memory, making it act as if its burned into it by a manufacturer.
+	void loadFontSet();
 
 public:
 
 	Chip8(Graphics* graphics)
 	{
 		graphicsController = graphics;
+		resetChip();
+		loadFontSet();
 	}
 };
