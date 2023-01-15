@@ -18,6 +18,7 @@ public:
 	void clearGFX();
 
 	virtual void drawScreen() = 0;
+	virtual void clearScreen() = 0;
 
 	Graphics();
 };

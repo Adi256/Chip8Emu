@@ -1,6 +1,9 @@
 #pragma once
 
+#include <iostream>
+
 #include"Graphics.h"
+#include"Sound.h"
 
 #define MEMORY_SIZE 4096
 //Chip has 15 8-bit general purpose registers, plus one extra for carry flag
@@ -35,6 +38,7 @@ class Chip8
 	* Expects a child class that implements all of the virtual functions.
 	*/
 	Graphics* graphicsController = nullptr;
+	Sound* soundController = nullptr;
 
 	//Timer register that counts to 0 when set above that value.
 	unsigned char delayTimer;
@@ -73,6 +77,26 @@ class Chip8
 	//Loads a font set into a memory, making it act as if its burned into it by a manufacturer.
 	void loadFontSet();
 
+	void fetchOpcode()
+	{
+		//Each opcode consists of two bytes.
+		opcode = memory[pc] << 8 | memory[pc + 1];
+	}
+
+	void execute0x8Opcodes();
+	void executeOpcode();
+
+	void updateTimers()
+	{
+		if (delayTimer > 0)
+			delayTimer--;
+		if (soundTimer > 0)
+		{
+			soundController->beep();
+			soundTimer--;
+		}
+	}
+
 public:
 
 	Chip8(Graphics* graphics)
@@ -80,5 +104,12 @@ public:
 		graphicsController = graphics;
 		resetChip();
 		loadFontSet();
+	}
+
+	void emulateCycle()
+	{
+		fetchOpcode();
+		executeOpcode();
+		updateTimers();
 	}
 };

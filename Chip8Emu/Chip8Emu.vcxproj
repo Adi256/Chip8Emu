@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClInclude Include="Chip8.h" />
     <ClInclude Include="Graphics.h" />
+    <ClInclude Include="Sound.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
