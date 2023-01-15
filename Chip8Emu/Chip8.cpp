@@ -58,6 +58,7 @@ void Chip8::execute0x8Opcodes()
 		pc += 2;
 		break;
 
+	//Bitwise operations
 	case 0x0001:
 		V[opcode & 0x0F00] |= V[opcode & 0x00F0];
 		pc += 2;
@@ -70,6 +71,60 @@ void Chip8::execute0x8Opcodes()
 
 	case 0x0003:
 		V[opcode & 0x0F00] ^= V[opcode & 0x00F0];
+		pc += 2;
+		break;
+
+	// VX += VY with carry
+	case 0x0004:
+		//Reseting the overflow register
+		V[0xF] = 0;
+		//Setting the overflow register if overflow happens
+		if (0xFF - V[opcode & 0x0F00] < V[opcode & 0x00F0])
+			V[0xF] = 1;
+
+		V[opcode & 0x0F00] += V[opcode & 0x00F0];
+		pc += 2;
+		break;
+
+	// VX -= VY with borrow
+	case 0x0005:
+		//Checks for borrow
+		if (0xFF - V[opcode & 0x0F00] > V[opcode & 0x00F0])
+			V[0xF] = 0;
+		else
+			V[0xF] = 1;
+
+		V[opcode & 0x0F00] -= V[opcode & 0x00F0];
+		pc += 2;
+		break;
+
+	case 0x0006:
+		//Store the least significant bit in the carry register
+		V[0xF] = V[opcode & 0x0F00] & 0x1;
+
+		//Shift the register content one to the right(binary)
+		V[opcode & 0x0F00] >>= 1;
+		pc += 2;
+		break;
+	
+	// VX = VY - VX with borrow
+	case 0x0007:
+		//Checks for borrow
+		if (0xFF - V[opcode & 0x0F00] < V[opcode & 0x00F0])
+			V[0xF] = 0;
+		else
+			V[0xF] = 1;
+
+		V[opcode & 0x0F00] = V[opcode & 0x00F0] - V[opcode & 0x0F00];
+		pc += 2;
+		break;
+
+	case 0x000E:
+		//Store the most significant bit in the carry register
+		V[0xF] = V[opcode & 0x0F00] & 0xFF;
+
+		//Shift the register content one to the left(binary)
+		V[opcode & 0x0F00] <<= 1;
 		pc += 2;
 		break;
 	}
