@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClInclude Include="Chip8.h" />
     <ClInclude Include="Graphics.h" />
+    <ClInclude Include="Keyboard.h" />
     <ClInclude Include="MathExtended.h" />
     <ClInclude Include="Sound.h" />
   </ItemGroup>

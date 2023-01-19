@@ -4,6 +4,7 @@
 
 #include"Graphics.h"
 #include"Sound.h"
+#include"Keyboard.h"
 #include"MathExtended.h"
 
 #define MEMORY_SIZE 4096
@@ -22,7 +23,7 @@ class Chip8
 	void clearMemory();
 
 	/*System memory map:
-	* 0x000-0x1FF Font set
+	* 0x000-0x200 Font set
 	* 0x200-0xFFF Program ROM and work RAM
 	*/
 
@@ -35,11 +36,11 @@ class Chip8
 	//Program counter
 	unsigned short pc;
 
-	/*Reference to a class responsible for displaying contents onto a screen.
-	* Expects a child class that implements all of the virtual functions.
+	/*References to classes that handle IO with different hardware.
 	*/
 	Graphics* graphicsController = nullptr;
 	Sound* soundController = nullptr;
+	Keyboard* keyboardController = nullptr;
 
 	//Timer register that counts to 0 when set above that value.
 	unsigned char delayTimer;
@@ -86,6 +87,7 @@ class Chip8
 
 	void execute0x8Opcodes();
 	void execute0xEOpcodes();
+	void execute0xFOpcodes();
 	void executeOpcode();
 
 	void updateTimers()
@@ -101,7 +103,7 @@ class Chip8
 
 public:
 
-	Chip8(Graphics* graphics)
+	Chip8(Graphics* graphics, Sound* sound)
 	{
 		graphicsController = graphics;
 		resetChip();

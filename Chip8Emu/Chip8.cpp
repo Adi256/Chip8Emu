@@ -54,23 +54,23 @@ void Chip8::execute0x8Opcodes()
 	switch (opcode & 0x000F)
 	{
 	case 0x0000:
-		V[opcode & 0x0F00] = V[opcode & 0x00F0];
+		V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
 		pc += 2;
 		break;
 
 	//Bitwise operations
 	case 0x0001:
-		V[opcode & 0x0F00] |= V[opcode & 0x00F0];
+		V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
 		pc += 2;
 		break;
 
 	case 0x0002:
-		V[opcode & 0x0F00] &= V[opcode & 0x00F0];
+		V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
 		pc += 2;
 		break;
 
 	case 0x0003:
-		V[opcode & 0x0F00] ^= V[opcode & 0x00F0];
+		V[(opcode & 0x0F00) >> 8] ^= V[(opcode & 0x00F0) >> 4];
 		pc += 2;
 		break;
 
@@ -79,52 +79,52 @@ void Chip8::execute0x8Opcodes()
 		//Reseting the overflow register
 		V[0xF] = 0;
 		//Setting the overflow register if overflow happens
-		if (0xFF - V[opcode & 0x0F00] < V[opcode & 0x00F0])
+		if (0xFF - V[(opcode & 0x0F00) >> 8] < V[(opcode & 0x00F0) >> 4])
 			V[0xF] = 1;
 
-		V[opcode & 0x0F00] += V[opcode & 0x00F0];
+		V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
 		pc += 2;
 		break;
 
 	// VX -= VY with borrow
 	case 0x0005:
 		//Checks for borrow
-		if (0xFF - V[opcode & 0x0F00] > V[opcode & 0x00F0])
+		if (0xFF - V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4])
 			V[0xF] = 0;
 		else
 			V[0xF] = 1;
 
-		V[opcode & 0x0F00] -= V[opcode & 0x00F0];
+		V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
 		pc += 2;
 		break;
 
 	case 0x0006:
 		//Store the least significant bit in the carry register
-		V[0xF] = V[opcode & 0x0F00] & 0x1;
+		V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
 
 		//Shift the register content one to the right(binary)
-		V[opcode & 0x0F00] >>= 1;
+		V[(opcode & 0x0F00) >> 8] >>= 1;
 		pc += 2;
 		break;
 	
 	// VX = VY - VX with borrow
 	case 0x0007:
 		//Checks for borrow
-		if (0xFF - V[opcode & 0x0F00] < V[opcode & 0x00F0])
+		if (0xFF - V[(opcode & 0x0F00) >> 8] < V[(opcode & 0x00F0)])
 			V[0xF] = 0;
 		else
 			V[0xF] = 1;
 
-		V[opcode & 0x0F00] = V[opcode & 0x00F0] - V[opcode & 0x0F00];
+		V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
 		pc += 2;
 		break;
 
 	case 0x000E:
 		//Store the most significant bit in the carry register
-		V[0xF] = V[opcode & 0x0F00] & 0xFF;
+		V[0xF] = V[(opcode & 0x0F00) >> 8] & 0xFF;
 
 		//Shift the register content one to the left(binary)
-		V[opcode & 0x0F00] <<= 1;
+		V[(opcode & 0x0F00) >> 8] <<= 1;
 		pc += 2;
 		break;
 	}
@@ -136,7 +136,7 @@ void Chip8::execute0xEOpcodes()
 	{
 	//Skip the next instruction if the key key[VX] is pressed
 	case 0x000E:
-		if (key[opcode & 0x0F00])
+		if (key[(opcode & 0x0F00) >> 8])
 			pc += 4;
 		else
 			pc += 2;
@@ -144,12 +144,34 @@ void Chip8::execute0xEOpcodes()
 
 	//Skip the next instruction if the key key[VX] is not pressed
 	case 0x0001:
-		if (key[opcode & 0x0F00])
+		if (key[(opcode & 0x0F00) >> 8])
 			pc += 2;
 		else
 			pc += 4;
 		break;
 
+	}
+}
+
+void Chip8::execute0xFOpcodes()
+{
+	switch (opcode & 0x00FF)
+	{
+	case 0x0007:
+		V[(opcode & 0x0F00) >> 8] = delayTimer;
+		break;
+	//Freezes the program until user interacts with it by clicking a key.
+	case 0x000A:
+		V[(opcode & 0x0F00) >> 8] = keyboardController->waitForKeyPress();
+		break;
+	case 0x0015:
+		delayTimer = V[(opcode & 0x0F00) >> 8];
+		break;
+	case 0x0018:
+		soundTimer = V[(opcode & 0x0F00) >> 8];
+		break;
+	case 0x001E:
+		I += V[(opcode & 0x0F00) >> 8];
 	}
 }
 
@@ -173,12 +195,51 @@ void Chip8::executeOpcode()
 			std::cout << "Unknown opcode: " << opcode << std::endl;
 		}
 
+	//Jump to nnn (0x1nnn)
+	case 0x1000:
+		pc = opcode & 0x0FFF;
+		break;
+
 	//Subroutine call
 	case 0x2000:
 		stack[sp++] = pc;
 		pc = opcode & 0x0FFF;
 		break;
-	
+
+	//Skip next instuction if Vx == kk (0x3xkk)
+	case 0x3000:
+		if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF))
+			pc += 4;
+		else
+			pc += 2;
+		break;
+
+	//Skip next instruction if Vx != kk
+	case 0x4000:
+		if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))
+			pc += 4;
+		else
+			pc += 2;
+		break;
+		
+	//Skip next instruction if Vx == Vy
+	case 0x5000:
+		if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
+			pc += 4;
+		else
+			pc += 2;
+		break;
+
+	//The interpreter puts the value kk into register Vx
+	case 0x6000:
+		V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
+		break;
+
+	//Adds the value kk to the value of register Vx, then stores the result in Vx
+	case 0x7000:
+		V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF);
+		break;
+
 	//Adds the value of VY to VX
 	case 0x8000:
 		execute0x8Opcodes();
@@ -186,7 +247,7 @@ void Chip8::executeOpcode()
 
 	//Skip the next instruction if VX != VY
 	case 0x9000:
-		if (V[opcode & 0x0F00] == V[opcode & 0x00F0])
+		if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
 			pc += 2;
 		else
 			pc += 4;
@@ -202,13 +263,16 @@ void Chip8::executeOpcode()
 		break;
 
 	case 0xC000:
-		V[opcode & 0x0F00] = MathExtended::randomNumber(0, 256) & (opcode & 0x00FF);
+		V[(opcode & 0x0F00) >> 8] = MathExtended::randomNumber(0, 256) & (opcode & 0x00FF);
 		pc += 2;
 		break;
 
 	case 0xE000:
 		execute0xEOpcodes();
 		break;
+
+	case 0xF000:
+		execute0xFOpcodes();
 
 	default:
 		std::cout << "Unknown opcode: " << opcode << std::endl;
