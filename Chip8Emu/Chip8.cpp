@@ -1,5 +1,7 @@
 #include "Chip8.h"
 
+//Opcodes and documentation comes from http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
+
 const char chip8FontSet[80] = {0,0,0,0,0,0,0,0,0,0,
 							   0,0,0,0,0,0,0,0,0,0,
 							   0,0,0,0,0,0,0,0,0,0,
@@ -49,6 +51,7 @@ void Chip8::loadFontSet()
 	}
 }
 
+//Executes opcodes that start with hex 0x8
 void Chip8::execute0x8Opcodes()
 {
 	switch (opcode & 0x000F)
@@ -130,6 +133,7 @@ void Chip8::execute0x8Opcodes()
 	}
 }
 
+//Executes opcodes that start with hex 0xE
 void Chip8::execute0xEOpcodes()
 {
 	switch (opcode & 0x000F)
@@ -153,26 +157,44 @@ void Chip8::execute0xEOpcodes()
 	}
 }
 
+//Executes opcodes that start with hex 0xF
 void Chip8::execute0xFOpcodes()
 {
+	//Variable either modified or read from for every 0xF opcode
+	unsigned char &Vx = V[(opcode & 0x0F00) >> 8];
 	switch (opcode & 0x00FF)
 	{
 	case 0x0007:
-		V[(opcode & 0x0F00) >> 8] = delayTimer;
+		Vx = delayTimer;
 		break;
 	//Freezes the program until user interacts with it by clicking a key.
 	case 0x000A:
-		V[(opcode & 0x0F00) >> 8] = keyboardController->waitForKeyPress();
+		Vx = keyboardController->waitForKeyPress();
 		break;
 	case 0x0015:
-		delayTimer = V[(opcode & 0x0F00) >> 8];
+		delayTimer = Vx;
 		break;
 	case 0x0018:
-		soundTimer = V[(opcode & 0x0F00) >> 8];
+		soundTimer = Vx;
 		break;
 	case 0x001E:
-		I += V[(opcode & 0x0F00) >> 8];
+		I += Vx;
+		break;
+	case 0x0033:
+		memory[I] = Vx / 100;
+		memory[I + 1] = (Vx - memory[I] * 100) / 10;
+		memory[I + 2] = Vx - (memory[I] * 100 + memory[I + 1] * 10);
+		break;
+	//Read registers V0 through Vx from memory starting at location I
+	case 0x0055:
+		for(int x = 0; x <= ((opcode & 0x0F00) >> 8); x++)
+		{
+			V[x] = memory[I + x];
+		}
+		break;
 	}
+
+	pc += 2;
 }
 
 void Chip8::executeOpcode()
