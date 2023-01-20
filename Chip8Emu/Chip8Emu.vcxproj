@@ -132,6 +132,7 @@
     <ClCompile Include="Graphics.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BitTools.h" />
     <ClInclude Include="Chip8.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Keyboard.h" />

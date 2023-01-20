@@ -2,14 +2,26 @@
 
 //Opcodes and documentation comes from http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
 
-const char chip8FontSet[80] = {0,0,0,0,0,0,0,0,0,0,
-							   0,0,0,0,0,0,0,0,0,0,
-							   0,0,0,0,0,0,0,0,0,0,
-							   0,0,0,0,0,0,0,0,0,0,
-							   0,0,0,0,0,0,0,0,0,0,
-							   0,0,0,0,0,0,0,0,0,0,
-							   0,0,0,0,0,0,0,0,0,0,
-							   0,0,0,0,0,0,0,0,0,0};
+//Fontset from https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
+unsigned char chip8_fontset[80] =
+{
+  0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+  0x20, 0x60, 0x20, 0x20, 0x70, // 1
+  0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+  0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+  0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+  0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+  0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+  0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+  0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+  0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+  0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+  0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+  0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+  0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+  0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+  0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
 
 void Chip8::clearMemory()
 {
@@ -21,7 +33,7 @@ void Chip8::clearMemory()
 
 void Chip8::clearRegisters()
 {
-	for (int i = 0; i < REGISTER_AMOUNT; i++)
+	for (unsigned char i = 0; i < REGISTER_AMOUNT; i++)
 	{
 		V[i] = 0;
 	}
@@ -29,7 +41,7 @@ void Chip8::clearRegisters()
 
 void Chip8::clearStack()
 {
-	for (int i = 0; i < STACK_SIZE; i++)
+	for (unsigned char i = 0; i < STACK_SIZE; i++)
 	{
 		stack[i] = 0;
 	}
@@ -37,7 +49,7 @@ void Chip8::clearStack()
 
 void Chip8::clearKeysState()
 {
-	for (int i = 0; i < PHYSICAL_KEY_AMOUNT; i++)
+	for (unsigned char i = 0; i < PHYSICAL_KEY_AMOUNT; i++)
 	{
 		key[i] = 0;
 	}
@@ -45,9 +57,9 @@ void Chip8::clearKeysState()
 
 void Chip8::loadFontSet()
 {
-	for (int i = 0; i < 80; i++)
+	for (unsigned char i = 0; i < 80; i++)
 	{
-		memory[i] = chip8FontSet[i];
+		memory[i] = chip8_fontset[i];
 	}
 }
 
@@ -160,34 +172,34 @@ void Chip8::execute0xEOpcodes()
 //Executes opcodes that start with hex 0xF
 void Chip8::execute0xFOpcodes()
 {
-	//Variable either modified or read from for every 0xF opcode
-	unsigned char &Vx = V[(opcode & 0x0F00) >> 8];
+	//Register ID
+	unsigned char rID = (opcode & 0x0F00) >> 8;
 	switch (opcode & 0x00FF)
 	{
 	case 0x0007:
-		Vx = delayTimer;
+		V[rID] = delayTimer;
 		break;
 	//Freezes the program until user interacts with it by clicking a key.
 	case 0x000A:
-		Vx = keyboardController->waitForKeyPress();
+		V[rID] = keyboardController->waitForKeyPress();
 		break;
 	case 0x0015:
-		delayTimer = Vx;
+		delayTimer = V[rID];
 		break;
 	case 0x0018:
-		soundTimer = Vx;
+		soundTimer = V[rID];
 		break;
 	case 0x001E:
-		I += Vx;
+		I += V[rID];
 		break;
 	case 0x0033:
-		memory[I] = Vx / 100;
-		memory[I + 1] = (Vx - memory[I] * 100) / 10;
-		memory[I + 2] = Vx - (memory[I] * 100 + memory[I + 1] * 10);
+		memory[I] = V[rID] / 100;
+		memory[I + 1] = (V[rID] - memory[I] * 100) / 10;
+		memory[I + 2] = V[rID] - (memory[I] * 100 + memory[I + 1] * 10);
 		break;
 	//Read registers V0 through Vx from memory starting at location I
 	case 0x0055:
-		for(int x = 0; x <= ((opcode & 0x0F00) >> 8); x++)
+		for(int x = 0; x <= rID; x++)
 		{
 			V[x] = memory[I + x];
 		}
@@ -289,12 +301,25 @@ void Chip8::executeOpcode()
 		pc += 2;
 		break;
 
+	case 0xD000:
+		unsigned char rows = opcode & 0x000F;
+		unsigned char collisions = 0;
+		for (unsigned char row = 0; row < rows; row++)
+		{
+			collisions += graphicsController->xorRow(V[(opcode & 0x0F00) >> 8],
+				V[(opcode & 0x00F0) >> 4],
+				memory[I + row]);
+		}
+		pc += 2;
+		break;
+
 	case 0xE000:
 		execute0xEOpcodes();
 		break;
 
 	case 0xF000:
 		execute0xFOpcodes();
+		break;
 
 	default:
 		std::cout << "Unknown opcode: " << opcode << std::endl;

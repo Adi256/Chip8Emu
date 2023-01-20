@@ -1,8 +1,9 @@
 #include <iostream>
 #include "Chip8.h"
+#include "BitTools.h"
+#include <bitset>
 
 int main(int argc, char** argv)
 {
-    Chip8 chip8;
-    
+    return 0;
 }
