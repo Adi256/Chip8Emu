@@ -231,10 +231,10 @@ void Chip8::executeOpcode()
 	switch (opcode & 0xF000)
 	{
 	case 0x0000:
-		switch (opcode & 0x000F)
+		switch (opcode & 0x00FF)
 		{
-		case 0x0000:
-			//graphicsController->clearGFX();
+		case 0x00E0:
+			graphicsController->clearGFX();
 			pc += 2;
 			break;
 		//Coming back from a subroutine
