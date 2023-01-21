@@ -21,7 +21,7 @@ public:
 			toWrap >>= shiftBy; //Here we are performing the shift itself. The bits from above are lost for now.
 			toWrap |= (ending << (sizeof(toWrap) * CHAR_BIT - shiftBy)); // Here we are "copy pasting" those bits to the beginning of our variable.
 		}
-		else
+		else if (shiftBy < 0)
 		{
 			shiftBy = -shiftBy;
 			shiftBy %= sizeof(toWrap) * CHAR_BIT;

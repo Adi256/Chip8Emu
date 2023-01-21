@@ -1,3 +1,6 @@
+#pragma once
+#define PHYSICAL_KEY_AMOUNT 16
+
 class Keyboard
 {
 public:

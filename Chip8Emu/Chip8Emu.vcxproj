@@ -129,15 +129,20 @@
   <ItemGroup>
     <ClCompile Include="Chip8.cpp" />
     <ClCompile Include="Chip8Emu.cpp" />
+    <ClCompile Include="ConsoleGraphics.cpp" />
     <ClCompile Include="Graphics.cpp" />
+    <ClCompile Include="WindowsKeyboard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitTools.h" />
     <ClInclude Include="Chip8.h" />
+    <ClInclude Include="ConsoleGraphics.h" />
+    <ClInclude Include="ConsoleSound.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="MathExtended.h" />
     <ClInclude Include="Sound.h" />
+    <ClInclude Include="WindowsKeyboard.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

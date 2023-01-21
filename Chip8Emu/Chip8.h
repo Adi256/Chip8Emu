@@ -2,6 +2,9 @@
 
 #include <iostream>
 
+#include <thread>
+#include <chrono>
+
 #include"Graphics.h"
 #include"Sound.h"
 #include"Keyboard.h"
@@ -11,7 +14,12 @@
 //Chip has 15 8-bit general purpose registers, plus one extra for carry flag
 #define REGISTER_AMOUNT 16
 #define STACK_SIZE 16
-#define PHYSICAL_KEY_AMOUNT 16
+
+//Frequency in Hz, source: https://github.com/AfBu/haxe-CHIP-8-emulator/wiki/(Super)CHIP-8-Secrets#speed-of-emulation
+#define CHIP_FREQUENCY 500
+#define TIMER_FREQUENCY 60
+
+using namespace std::chrono;
 
 class Chip8
 {
@@ -59,6 +67,7 @@ class Chip8
 
 	void resetChip()
 	{
+		std::cout << "Reseting the chip..." << std::endl;
 		opcode = 0;
 
 		clearMemory();
@@ -74,6 +83,8 @@ class Chip8
 		
 		clearStack();
 		sp = 0; //Reseting the stack pointer.
+
+		std::cout << "Chip reset was successful." << std::endl;
 	}
 	
 	//Loads a font set into a memory, making it act as if its burned into it by a manufacturer.
@@ -101,6 +112,18 @@ class Chip8
 		}
 	}
 
+	void emulateCycle(bool shouldUpdateTimers, bool renderScreen = true)
+	{	
+		fetchOpcode();
+		executeOpcode();
+
+		if(shouldUpdateTimers)
+			updateTimers();
+
+		if(renderScreen)
+			graphicsController->drawScreen();
+	}
+
 public:
 
 	Chip8(Graphics* graphics, Sound* sound)
@@ -109,11 +132,11 @@ public:
 		resetChip();
 		loadFontSet();
 	}
+	
+	//Runs the chip for a given number of cycles 
+	void run(int cycles, bool renderScreen);
+	//Only prints out memory addresses until pc
+	void debugRun(int cycles);
 
-	void emulateCycle()
-	{
-		fetchOpcode();
-		executeOpcode();
-		updateTimers();
-	}
+	void debugLoadOpcodesMenu(unsigned char numberOfOpcodes);
 };

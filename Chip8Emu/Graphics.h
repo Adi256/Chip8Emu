@@ -7,6 +7,7 @@
 
 class Graphics
 {
+protected:
 	//Holds information about the current contents of a screen
 	//Note that the display is black and white only
 	unsigned long long gfx[SCREEN_H];

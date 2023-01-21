@@ -25,42 +25,52 @@ unsigned char chip8_fontset[80] =
 
 void Chip8::clearMemory()
 {
+	std::cout << "Clearing the memory..." << std::endl;
 	for (int i = 0x200; i < MEMORY_SIZE; i++)
 	{
 		memory[i] = 0;
 	}
+	std::cout << "Memory cleared!" << std::endl;
 }
 
 void Chip8::clearRegisters()
 {
+	std::cout << "Clearing the registers..." << std::endl;
 	for (unsigned char i = 0; i < REGISTER_AMOUNT; i++)
 	{
 		V[i] = 0;
 	}
+	std::cout << "Registers cleared!" << std::endl;
 }
 
 void Chip8::clearStack()
 {
+	std::cout << "Clearing the stack..." << std::endl;
 	for (unsigned char i = 0; i < STACK_SIZE; i++)
 	{
 		stack[i] = 0;
 	}
+	std::cout << "Stack cleared!" << std::endl;
 }
 
 void Chip8::clearKeysState()
 {
+	std::cout << "Clearing the key states..." << std::endl;
 	for (unsigned char i = 0; i < PHYSICAL_KEY_AMOUNT; i++)
 	{
 		key[i] = 0;
 	}
+	std::cout << "Key states cleared!" << std::endl;
 }
 
 void Chip8::loadFontSet()
 {
+	std::cout << "Loading the font set..." << std::endl;
 	for (unsigned char i = 0; i < 80; i++)
 	{
 		memory[i] = chip8_fontset[i];
 	}
+	std::cout << "Font set loaded!" << std::endl;
 }
 
 //Executes opcodes that start with hex 0x8
@@ -165,7 +175,8 @@ void Chip8::execute0xEOpcodes()
 		else
 			pc += 4;
 		break;
-
+	default:
+		std::cout << "Unknown opcode: " << opcode << std::endl;
 	}
 }
 
@@ -192,6 +203,10 @@ void Chip8::execute0xFOpcodes()
 	case 0x001E:
 		I += V[rID];
 		break;
+	//The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx.
+	case 0x0029:
+		I = V[rID] * 5;
+		break;
 	case 0x0033:
 		memory[I] = V[rID] / 100;
 		memory[I + 1] = (V[rID] - memory[I] * 100) / 10;
@@ -204,6 +219,8 @@ void Chip8::execute0xFOpcodes()
 			V[x] = memory[I + x];
 		}
 		break;
+	default:
+		std::cout << "Unknown opcode: " << opcode << std::endl;
 	}
 
 	pc += 2;
@@ -217,7 +234,7 @@ void Chip8::executeOpcode()
 		switch (opcode & 0x000F)
 		{
 		case 0x0000:
-			graphicsController->clearScreen();
+			//graphicsController->clearGFX();
 			pc += 2;
 			break;
 		//Coming back from a subroutine
@@ -228,6 +245,7 @@ void Chip8::executeOpcode()
 		default:
 			std::cout << "Unknown opcode: " << opcode << std::endl;
 		}
+		break;
 
 	//Jump to nnn (0x1nnn)
 	case 0x1000:
@@ -267,11 +285,13 @@ void Chip8::executeOpcode()
 	//The interpreter puts the value kk into register Vx
 	case 0x6000:
 		V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
+		pc += 2;
 		break;
 
 	//Adds the value kk to the value of register Vx, then stores the result in Vx
 	case 0x7000:
 		V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF);
+		pc += 2;
 		break;
 
 	//Adds the value of VY to VX
@@ -302,16 +322,22 @@ void Chip8::executeOpcode()
 		break;
 
 	case 0xD000:
+	{
 		unsigned char rows = opcode & 0x000F;
 		unsigned char collisions = 0;
 		for (unsigned char row = 0; row < rows; row++)
 		{
 			collisions += graphicsController->xorRow(V[(opcode & 0x0F00) >> 8],
-				V[(opcode & 0x00F0) >> 4],
+				V[(opcode & 0x00F0) >> 4] + row,
 				memory[I + row]);
+		}
+		if (collisions > 0)
+		{
+			V[0xF] = 1;
 		}
 		pc += 2;
 		break;
+	}
 
 	case 0xE000:
 		execute0xEOpcodes();
@@ -323,5 +349,43 @@ void Chip8::executeOpcode()
 
 	default:
 		std::cout << "Unknown opcode: " << opcode << std::endl;
+	}
+}
+
+void Chip8::run(int cycles, bool renderScreen)
+{
+	for (int cycle = 0; cycle < cycles; cycle++)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / TIMER_FREQUENCY));
+		emulateCycle(true, renderScreen);
+	}
+}
+
+void Chip8::debugRun(int cycles)
+{
+	std::cout << "Font memory: " << std::endl;
+	for (int mem = 0; mem < 0x200; mem++)
+	{
+		std::cout << " " << memory[mem] << " ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "Program memory: " << std::endl;
+	for (int cycle = 0; cycle < cycles; cycle++)
+	{
+		emulateCycle(true, false);
+		std::cout << "PC: " << pc << " memory: " << opcode << std::endl;
+	}
+}
+
+void Chip8::debugLoadOpcodesMenu(unsigned char numberOfOpcodes)
+{
+	for (unsigned char _opcode = 0; _opcode < numberOfOpcodes; _opcode++)
+	{
+		std::cout << "Opcode: " << std::endl;
+		int code = 0;
+		std::cin >> code;
+		memory[0x200 + _opcode * 2] = code >> 8;
+		memory[0x200 + _opcode * 2 + 1] = code;
 	}
 }
