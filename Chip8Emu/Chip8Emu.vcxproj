@@ -141,6 +141,7 @@
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="MathExtended.h" />
+    <ClInclude Include="Opcodes.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="WindowsKeyboard.h" />
   </ItemGroup>

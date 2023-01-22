@@ -5,6 +5,9 @@
 #include <thread>
 #include <chrono>
 
+#include <fstream>
+#include <sstream>
+
 #include"Graphics.h"
 #include"Sound.h"
 #include"Keyboard.h"
@@ -20,6 +23,18 @@
 #define TIMER_FREQUENCY 60
 
 using namespace std::chrono;
+
+class UnknownOpcodeException : std::exception
+{
+public:
+	UnknownOpcodeException(int opcode) : unknownOpcode(opcode) {}
+
+	int unknownOpcode;
+	const char* what()
+	{
+		return "Tried to execute an unknown opcode!";
+	}
+};
 
 class Chip8
 {
@@ -112,16 +127,29 @@ class Chip8
 		}
 	}
 
-	void emulateCycle(bool shouldUpdateTimers, bool renderScreen = true)
+	//Returns false if the opcode failed to execute
+	bool emulateCycle(bool shouldUpdateTimers, bool renderScreen = true)
 	{	
 		fetchOpcode();
-		executeOpcode();
+		pc += 2;
+		try
+		{
+			executeOpcode();
+		}
+		catch (UnknownOpcodeException uoe)
+		{
+			std::cout << uoe.what() << std::endl;
+			std::cout << uoe.unknownOpcode << std::endl;
+			return false;
+		}
 
 		if(shouldUpdateTimers)
 			updateTimers();
 
 		if(renderScreen)
 			graphicsController->drawScreen();
+
+		return true;
 	}
 
 public:
@@ -136,7 +164,8 @@ public:
 	//Runs the chip for a given number of cycles 
 	void run(int cycles, bool renderScreen);
 	//Only prints out memory addresses until pc
-	void debugRun(int cycles);
+	void debugRun(int cycles, bool renderScreen);
 
 	void debugLoadOpcodesMenu(unsigned char numberOfOpcodes);
+	bool loadProgramIntoMemory(const char* programName);
 };

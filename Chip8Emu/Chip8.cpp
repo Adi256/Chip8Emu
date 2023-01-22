@@ -1,4 +1,5 @@
 #include "Chip8.h"
+#include "Opcodes.h"
 
 //Opcodes and documentation comes from http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
 
@@ -78,62 +79,50 @@ void Chip8::execute0x8Opcodes()
 {
 	switch (opcode & 0x000F)
 	{
-	case 0x0000:
+	case LD_8:
 		V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
-		pc += 2;
 		break;
 
-	//Bitwise operations
-	case 0x0001:
+	case OR_8:
 		V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
-		pc += 2;
 		break;
 
-	case 0x0002:
+	case AND_8:
 		V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
-		pc += 2;
 		break;
 
-	case 0x0003:
+	case XOR_8:
 		V[(opcode & 0x0F00) >> 8] ^= V[(opcode & 0x00F0) >> 4];
-		pc += 2;
 		break;
 
-	// VX += VY with carry
-	case 0x0004:
+	case ADD_8:
 		//Reseting the overflow register
 		V[0xF] = 0;
 		//Setting the overflow register if overflow happens
 		if (0xFF - V[(opcode & 0x0F00) >> 8] < V[(opcode & 0x00F0) >> 4])
 			V[0xF] = 1;
-
 		V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
-		pc += 2;
 		break;
 
-	// VX -= VY with borrow
-	case 0x0005:
+	case SUB_8:
 		//Checks for borrow
 		if (0xFF - V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4])
 			V[0xF] = 0;
 		else
 			V[0xF] = 1;
-
 		V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
-		pc += 2;
+		
 		break;
 
-	case 0x0006:
+	case SHR_8:
 		//Store the least significant bit in the carry register
 		V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
 
 		//Shift the register content one to the right(binary)
 		V[(opcode & 0x0F00) >> 8] >>= 1;
-		pc += 2;
 		break;
-	
-	// VX = VY - VX with borrow
-	case 0x0007:
+
+	case SUBN_8:
 		//Checks for borrow
 		if (0xFF - V[(opcode & 0x0F00) >> 8] < V[(opcode & 0x00F0)])
 			V[0xF] = 0;
@@ -141,17 +130,19 @@ void Chip8::execute0x8Opcodes()
 			V[0xF] = 1;
 
 		V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
-		pc += 2;
+		
 		break;
 
-	case 0x000E:
+	case SHL_8:
 		//Store the most significant bit in the carry register
 		V[0xF] = V[(opcode & 0x0F00) >> 8] & 0xFF;
 
 		//Shift the register content one to the left(binary)
 		V[(opcode & 0x0F00) >> 8] <<= 1;
-		pc += 2;
 		break;
+
+	default:
+		throw UnknownOpcodeException(opcode);
 	}
 }
 
@@ -163,20 +154,16 @@ void Chip8::execute0xEOpcodes()
 	//Skip the next instruction if the key key[VX] is pressed
 	case 0x000E:
 		if (key[(opcode & 0x0F00) >> 8])
-			pc += 4;
-		else
 			pc += 2;
 		break;
 
 	//Skip the next instruction if the key key[VX] is not pressed
 	case 0x0001:
-		if (key[(opcode & 0x0F00) >> 8])
+		if (!key[(opcode & 0x0F00) >> 8])
 			pc += 2;
-		else
-			pc += 4;
 		break;
 	default:
-		std::cout << "Unknown opcode: " << opcode << std::endl;
+		throw UnknownOpcodeException(opcode);
 	}
 }
 
@@ -212,18 +199,25 @@ void Chip8::execute0xFOpcodes()
 		memory[I + 1] = (V[rID] - memory[I] * 100) / 10;
 		memory[I + 2] = V[rID] - (memory[I] * 100 + memory[I + 1] * 10);
 		break;
-	//Read registers V0 through Vx from memory starting at location I
+		//Read registers V0 through Vx from memory starting at location I
 	case 0x0055:
+		for (int x = 0; x <= rID; x++)
+		{
+			memory[I + x] = V[x];
+		}
+		break;
+	//Read registers V0 through Vx from memory starting at location I
+	case 0x0065:
 		for(int x = 0; x <= rID; x++)
 		{
 			V[x] = memory[I + x];
 		}
 		break;
 	default:
-		std::cout << "Unknown opcode: " << opcode << std::endl;
+		throw UnknownOpcodeException(opcode);
 	}
 
-	pc += 2;
+	
 }
 
 void Chip8::executeOpcode()
@@ -235,63 +229,46 @@ void Chip8::executeOpcode()
 		{
 		case 0x00E0:
 			graphicsController->clearGFX();
-			pc += 2;
 			break;
 		//Coming back from a subroutine
-		case 0x000E:
+		case 0x00EE:
 			pc = stack[--sp];
-			pc += 2;
 			break;
 		default:
-			std::cout << "Unknown opcode: " << opcode << std::endl;
+			throw UnknownOpcodeException(opcode);
 		}
 		break;
 
-	//Jump to nnn (0x1nnn)
-	case 0x1000:
+	case JP:
 		pc = opcode & 0x0FFF;
 		break;
 
-	//Subroutine call
-	case 0x2000:
+	case CALL:
 		stack[sp++] = pc;
 		pc = opcode & 0x0FFF;
 		break;
 
-	//Skip next instuction if Vx == kk (0x3xkk)
-	case 0x3000:
+	case SE:
 		if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF))
-			pc += 4;
-		else
 			pc += 2;
 		break;
 
-	//Skip next instruction if Vx != kk
-	case 0x4000:
+	case SNE:
 		if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))
-			pc += 4;
-		else
 			pc += 2;
 		break;
 		
-	//Skip next instruction if Vx == Vy
-	case 0x5000:
+	case VSE:
 		if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
-			pc += 4;
-		else
 			pc += 2;
 		break;
 
-	//The interpreter puts the value kk into register Vx
-	case 0x6000:
+	case LD:
 		V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
-		pc += 2;
 		break;
 
-	//Adds the value kk to the value of register Vx, then stores the result in Vx
-	case 0x7000:
+	case ADD:
 		V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF);
-		pc += 2;
 		break;
 
 	//Adds the value of VY to VX
@@ -301,15 +278,12 @@ void Chip8::executeOpcode()
 
 	//Skip the next instruction if VX != VY
 	case 0x9000:
-		if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
+		if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4])
 			pc += 2;
-		else
-			pc += 4;
 		break;
 
 	case 0xA000:
 		I = opcode & 0x0FFF;
-		pc += 2;
 		break;
 
 	case 0xB000:
@@ -318,7 +292,6 @@ void Chip8::executeOpcode()
 
 	case 0xC000:
 		V[(opcode & 0x0F00) >> 8] = MathExtended::randomNumber(0, 256) & (opcode & 0x00FF);
-		pc += 2;
 		break;
 
 	case 0xD000:
@@ -335,7 +308,6 @@ void Chip8::executeOpcode()
 		{
 			V[0xF] = 1;
 		}
-		pc += 2;
 		break;
 	}
 
@@ -348,7 +320,7 @@ void Chip8::executeOpcode()
 		break;
 
 	default:
-		std::cout << "Unknown opcode: " << opcode << std::endl;
+		throw UnknownOpcodeException(opcode);
 	}
 }
 
@@ -357,11 +329,12 @@ void Chip8::run(int cycles, bool renderScreen)
 	for (int cycle = 0; cycle < cycles; cycle++)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / TIMER_FREQUENCY));
-		emulateCycle(true, renderScreen);
+		if (emulateCycle(true, renderScreen) == false)
+			return;
 	}
 }
 
-void Chip8::debugRun(int cycles)
+void Chip8::debugRun(int cycles, bool renderScreen)
 {
 	std::cout << "Font memory: " << std::endl;
 	for (int mem = 0; mem < 0x200; mem++)
@@ -373,7 +346,8 @@ void Chip8::debugRun(int cycles)
 	std::cout << "Program memory: " << std::endl;
 	for (int cycle = 0; cycle < cycles; cycle++)
 	{
-		emulateCycle(true, false);
+		if (emulateCycle(true, renderScreen) == false)
+			return;
 		std::cout << "PC: " << pc << " memory: " << opcode << std::endl;
 	}
 }
@@ -388,4 +362,23 @@ void Chip8::debugLoadOpcodesMenu(unsigned char numberOfOpcodes)
 		memory[0x200 + _opcode * 2] = code >> 8;
 		memory[0x200 + _opcode * 2 + 1] = code;
 	}
+}
+
+bool Chip8::loadProgramIntoMemory(const char* programName)
+{
+	std::ifstream program(programName, std::ios::binary);
+	int memoryAddr = 0x200; //Currently modified memory address.
+
+	if (program.is_open() == false)
+		return false;
+
+	std::stringstream buffer;
+	buffer << program.rdbuf();
+
+	for (int ch = 0; ch < buffer.str().length(); ch++)
+	{
+		memory[0x200 + ch] = buffer.str()[ch];
+	}
+
+	return true;
 }
