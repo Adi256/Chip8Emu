@@ -14,13 +14,13 @@ int main(int argc, char** argv)
 
     Chip8 chip(&graphics, &sound);
 
-    if (chip.loadProgramIntoMemory("Programs/Delay Timer Test [Matthew Mikolay, 2010].ch8") == false)
+    if (chip.loadProgramIntoMemory("Programs/IBM Logo.ch8") == false)
     {
         std::cout << "Failed to load the program into Chip-8 memory!" << std::endl;
         return -1;
     }
     
-    chip.debugRun(1000, true);
+    chip.debugRun(-1, true, false);
 
     return 0;
 }

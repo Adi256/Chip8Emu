@@ -76,6 +76,9 @@ class Chip8
 	//A stack pointer, points at a current position in a stack.
 	unsigned short sp;
 
+	//If true, redraw the screen
+	bool screenChanged;
+
 	//Stores a current state of a key
 	unsigned char key[PHYSICAL_KEY_AMOUNT];
 	void clearKeysState();
@@ -128,8 +131,9 @@ class Chip8
 	}
 
 	//Returns false if the opcode failed to execute
-	bool emulateCycle(bool shouldUpdateTimers, bool renderScreen = true)
+	bool emulateCycle(bool shouldUpdateTimers, bool renderScreen = true, bool refreshScreen = true)
 	{	
+		screenChanged = false;
 		fetchOpcode();
 		pc += 2;
 		try
@@ -146,8 +150,8 @@ class Chip8
 		if(shouldUpdateTimers)
 			updateTimers();
 
-		if(renderScreen)
-			graphicsController->drawScreen();
+		if(renderScreen && screenChanged)
+			graphicsController->drawScreen(refreshScreen);
 
 		return true;
 	}
@@ -164,7 +168,7 @@ public:
 	//Runs the chip for a given number of cycles 
 	void run(int cycles, bool renderScreen);
 	//Only prints out memory addresses until pc
-	void debugRun(int cycles, bool renderScreen);
+	void debugRun(int cycles, bool renderScreen, bool refreshScreen);
 
 	void debugLoadOpcodesMenu(unsigned char numberOfOpcodes);
 	bool loadProgramIntoMemory(const char* programName);

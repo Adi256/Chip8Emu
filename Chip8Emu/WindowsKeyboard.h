@@ -3,6 +3,8 @@
 #include<map>
 #include<stdexcept>
 #include<iostream>
+#include<fstream>
+#include<sstream>
 #include"Keyboard.h"
 
 class WindowsKeyboard : public Keyboard
@@ -32,4 +34,7 @@ public:
 
 	//Allows user to map custom keyboard keys for chip-8
 	void userMappingMenu();
+
+	//First keycode read corresponds to the first chip-8 button, second to second, etc.
+	bool loadMappingFromFile(const char* fileName);
 };

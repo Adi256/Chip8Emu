@@ -12,5 +12,5 @@ public:
 	{
 		clearConsoleOnDrawCall = clearConsoleOnDraw;
 	}
-	void drawScreen();
+	void drawScreen(bool clearBeforeDraw);
 };

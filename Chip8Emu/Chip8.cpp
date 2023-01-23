@@ -149,16 +149,14 @@ void Chip8::execute0x8Opcodes()
 //Executes opcodes that start with hex 0xE
 void Chip8::execute0xEOpcodes()
 {
-	switch (opcode & 0x000F)
+	switch (opcode & 0x00FF)
 	{
-	//Skip the next instruction if the key key[VX] is pressed
-	case 0x000E:
+	case SKP_E:
 		if (key[(opcode & 0x0F00) >> 8])
 			pc += 2;
 		break;
 
-	//Skip the next instruction if the key key[VX] is not pressed
-	case 0x0001:
+	case SKNP_E:
 		if (!key[(opcode & 0x0F00) >> 8])
 			pc += 2;
 		break;
@@ -174,40 +172,36 @@ void Chip8::execute0xFOpcodes()
 	unsigned char rID = (opcode & 0x0F00) >> 8;
 	switch (opcode & 0x00FF)
 	{
-	case 0x0007:
+	case LDVXDT_F:
 		V[rID] = delayTimer;
 		break;
-	//Freezes the program until user interacts with it by clicking a key.
-	case 0x000A:
+	case LDVXK_F:
 		V[rID] = keyboardController->waitForKeyPress();
 		break;
-	case 0x0015:
+	case LDDTVX_F:
 		delayTimer = V[rID];
 		break;
-	case 0x0018:
+	case LDSTVS_F:
 		soundTimer = V[rID];
 		break;
-	case 0x001E:
+	case ADD_F:
 		I += V[rID];
 		break;
-	//The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx.
-	case 0x0029:
+	case LDFVX_F:
 		I = V[rID] * 5;
 		break;
-	case 0x0033:
+	case LDBVX_F:
 		memory[I] = V[rID] / 100;
 		memory[I + 1] = (V[rID] - memory[I] * 100) / 10;
 		memory[I + 2] = V[rID] - (memory[I] * 100 + memory[I + 1] * 10);
 		break;
-		//Read registers V0 through Vx from memory starting at location I
-	case 0x0055:
+	case LDIVX_F:
 		for (int x = 0; x <= rID; x++)
 		{
 			memory[I + x] = V[x];
 		}
 		break;
-	//Read registers V0 through Vx from memory starting at location I
-	case 0x0065:
+	case LDVXI_F:
 		for(int x = 0; x <= rID; x++)
 		{
 			V[x] = memory[I + x];
@@ -216,8 +210,6 @@ void Chip8::execute0xFOpcodes()
 	default:
 		throw UnknownOpcodeException(opcode);
 	}
-
-	
 }
 
 void Chip8::executeOpcode()
@@ -227,11 +219,12 @@ void Chip8::executeOpcode()
 	case 0x0000:
 		switch (opcode & 0x00FF)
 		{
-		case 0x00E0:
+		case CLS_0:
 			graphicsController->clearGFX();
+			screenChanged = true;
 			break;
 		//Coming back from a subroutine
-		case 0x00EE:
+		case RET_0:
 			pc = stack[--sp];
 			break;
 		default:
@@ -263,7 +256,7 @@ void Chip8::executeOpcode()
 			pc += 2;
 		break;
 
-	case LD:
+	case LDVX:
 		V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
 		break;
 
@@ -271,30 +264,28 @@ void Chip8::executeOpcode()
 		V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF);
 		break;
 
-	//Adds the value of VY to VX
 	case 0x8000:
 		execute0x8Opcodes();
 		break;
 
-	//Skip the next instruction if VX != VY
-	case 0x9000:
+	case SNEVXVY:
 		if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4])
 			pc += 2;
 		break;
 
-	case 0xA000:
+	case LDI:
 		I = opcode & 0x0FFF;
 		break;
 
-	case 0xB000:
+	case JPV0:
 		pc = V[0] + opcode & 0x0FFF;
 		break;
 
-	case 0xC000:
+	case RND:
 		V[(opcode & 0x0F00) >> 8] = MathExtended::randomNumber(0, 256) & (opcode & 0x00FF);
 		break;
 
-	case 0xD000:
+	case DRW:
 	{
 		unsigned char rows = opcode & 0x000F;
 		unsigned char collisions = 0;
@@ -308,6 +299,7 @@ void Chip8::executeOpcode()
 		{
 			V[0xF] = 1;
 		}
+		screenChanged = true;
 		break;
 	}
 
@@ -326,7 +318,7 @@ void Chip8::executeOpcode()
 
 void Chip8::run(int cycles, bool renderScreen)
 {
-	for (int cycle = 0; cycle < cycles; cycle++)
+	for (int cycle = 0; cycle != cycles; cycle++)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / TIMER_FREQUENCY));
 		if (emulateCycle(true, renderScreen) == false)
@@ -334,7 +326,7 @@ void Chip8::run(int cycles, bool renderScreen)
 	}
 }
 
-void Chip8::debugRun(int cycles, bool renderScreen)
+void Chip8::debugRun(int cycles, bool renderScreen, bool refreshScreen)
 {
 	std::cout << "Font memory: " << std::endl;
 	for (int mem = 0; mem < 0x200; mem++)
@@ -344,9 +336,10 @@ void Chip8::debugRun(int cycles, bool renderScreen)
 	std::cout << std::endl;
 
 	std::cout << "Program memory: " << std::endl;
-	for (int cycle = 0; cycle < cycles; cycle++)
+	for (int cycle = 0; cycle != cycles; cycle++)
 	{
-		if (emulateCycle(true, renderScreen) == false)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / TIMER_FREQUENCY));
+		if (emulateCycle(true, renderScreen, refreshScreen) == false)
 			return;
 		std::cout << "PC: " << pc << " memory: " << opcode << std::endl;
 	}

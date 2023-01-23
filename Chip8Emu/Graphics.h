@@ -32,13 +32,13 @@ public:
 		* This means that if any of the bits has turned into 0, change < gfx[y], and if it didnt, change = gfx[y].
 		*/
 		unsigned long long change = tempRow & gfx[y];
-		if (gfx[y] - change > 0)
+		if ((tempRow - change) > 0)
 			return true;
 		else
 			return false;
 	}
 
-	virtual void drawScreen() = 0;
+	virtual void drawScreen(bool clearBeforeDraw) = 0;
 
 	Graphics();
 };
