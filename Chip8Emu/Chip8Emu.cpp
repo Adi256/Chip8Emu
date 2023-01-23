@@ -10,17 +10,18 @@ int main(int argc, char** argv)
     WindowsKeyboard keyboard;
     ConsoleSound sound;
 
-    //keyboard.userMappingMenu();
+    Chip8 chip(&graphics, &sound, &keyboard);
 
-    Chip8 chip(&graphics, &sound);
+    if (keyboard.loadMappingFromFile("Config/keymapping.txt") == false)
+        return -1;
 
-    if (chip.loadProgramIntoMemory("Programs/IBM Logo.ch8") == false)
+    if (chip.loadProgramIntoMemory("Programs/BMP Viewer - Hello (C8 example) [Hap, 2005].ch8") == false)
     {
         std::cout << "Failed to load the program into Chip-8 memory!" << std::endl;
         return -1;
     }
     
-    chip.debugRun(-1, true, false);
+    chip.run(-1, true);
 
     return 0;
 }

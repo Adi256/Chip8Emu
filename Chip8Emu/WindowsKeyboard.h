@@ -27,6 +27,7 @@ public:
 		catch (const std::out_of_range& oor)
 		{
 			std::cout << "Unmapped key pressed on a keyboard! Returning 0." << std::endl;
+			return 0;
 		}
 
 		return character;

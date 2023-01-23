@@ -158,9 +158,11 @@ class Chip8
 
 public:
 
-	Chip8(Graphics* graphics, Sound* sound)
+	Chip8(Graphics* graphics, Sound* sound, Keyboard* keyboard)
 	{
 		graphicsController = graphics;
+		soundController = sound;
+		keyboardController = keyboard;
 		resetChip();
 		loadFontSet();
 	}

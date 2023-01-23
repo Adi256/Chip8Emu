@@ -17,10 +17,11 @@ public:
 
 	//Xors a row of pixels. That is it performs a xor operation between 8bit excrept from the gfx array and 8bit row variable
 	//Returns true if collision was detected(1->0)
+	//TODO: Fix wrapping as some pixels are unfortunately lost.
 	bool xorRow(unsigned char x, unsigned char y, unsigned char row)
 	{
 		unsigned long long longRow = row;
-		BitTools<unsigned long long>::bitWrap(longRow, x); //Here we are shifting start of the row by its expected position. With this action, start of the row is where its x-coordinate is meant to be. We are also wrapping the row just as it is provided in the documentation.
+		BitTools<unsigned long long>::bitWrap(longRow, x + 8); //Here we are shifting start of the row by its expected position. With this action, start of the row is where its x-coordinate is meant to be. We are also wrapping the row just as it is provided in the documentation.
 		y %= SCREEN_H; //More wrapping.
 
 		unsigned long long tempRow = gfx[y];

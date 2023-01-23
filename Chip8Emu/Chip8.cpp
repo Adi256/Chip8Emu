@@ -130,12 +130,11 @@ void Chip8::execute0x8Opcodes()
 			V[0xF] = 1;
 
 		V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
-		
 		break;
 
 	case SHL_8:
 		//Store the most significant bit in the carry register
-		V[0xF] = V[(opcode & 0x0F00) >> 8] & 0xFF;
+		V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x80;
 
 		//Shift the register content one to the left(binary)
 		V[(opcode & 0x0F00) >> 8] <<= 1;
@@ -223,7 +222,6 @@ void Chip8::executeOpcode()
 			graphicsController->clearGFX();
 			screenChanged = true;
 			break;
-		//Coming back from a subroutine
 		case RET_0:
 			pc = stack[--sp];
 			break;
@@ -258,6 +256,7 @@ void Chip8::executeOpcode()
 
 	case LDVX:
 		V[(opcode & 0x0F00) >> 8] = (opcode & 0x00FF);
+		std::cout << V[(opcode & 0x0F00) >> 8] << std::endl;
 		break;
 
 	case ADD:
@@ -274,11 +273,11 @@ void Chip8::executeOpcode()
 		break;
 
 	case LDI:
-		I = opcode & 0x0FFF;
+		I = (opcode & 0x0FFF);
 		break;
 
 	case JPV0:
-		pc = V[0] + opcode & 0x0FFF;
+		pc = V[0] + (opcode & 0x0FFF);
 		break;
 
 	case RND:
@@ -318,11 +317,19 @@ void Chip8::executeOpcode()
 
 void Chip8::run(int cycles, bool renderScreen)
 {
+	int runFor = CHIP_FREQUENCY / TIMER_FREQUENCY; //This is a VERY haphazard implementation.
+	runFor--; //This is VERY error prone.
 	for (int cycle = 0; cycle != cycles; cycle++)
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / TIMER_FREQUENCY));
+		for (int subCycle = 0; subCycle < runFor; subCycle++)
+		{
+			if (emulateCycle(false, renderScreen) == false)
+				return;
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000 / CHIP_FREQUENCY));
+		}
 		if (emulateCycle(true, renderScreen) == false)
 			return;
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / CHIP_FREQUENCY));
 	}
 }
 
@@ -335,13 +342,20 @@ void Chip8::debugRun(int cycles, bool renderScreen, bool refreshScreen)
 	}
 	std::cout << std::endl;
 
-	std::cout << "Program memory: " << std::endl;
+	int runFor = CHIP_FREQUENCY / TIMER_FREQUENCY; //This is a VERY haphazard implementation.
+	runFor--; //This is VERY error prone.
 	for (int cycle = 0; cycle != cycles; cycle++)
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / TIMER_FREQUENCY));
+		for (int subCycle = 0; subCycle < runFor; subCycle++)
+		{
+			if (emulateCycle(false, renderScreen, refreshScreen) == false)
+				return;
+			std::cout << "PC: " << pc << " memory: " << opcode << std::endl;
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000 / CHIP_FREQUENCY));
+		}
 		if (emulateCycle(true, renderScreen, refreshScreen) == false)
 			return;
-		std::cout << "PC: " << pc << " memory: " << opcode << std::endl;
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / CHIP_FREQUENCY));
 	}
 }
 
